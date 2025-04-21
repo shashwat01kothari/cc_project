@@ -11,8 +11,8 @@ This project is a **Student Admission Admin Dashboard** built with **Next.js (fr
 ## 🛠️ Tech Stack
 
 - **Frontend:** Next.js, Tailwind CSS
-- **Backend:** FastAPI, PostgresQL
-- **Database:** SQLite (with raw SQL or SQLAlchemy)
+- **Backend:** FastAPI
+- **Database:** PostgresQL (with raw SQL or SQLAlchemy)
 
 ---
 
