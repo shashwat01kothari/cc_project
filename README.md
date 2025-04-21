@@ -16,22 +16,32 @@ This project is a **Student Admission Admin Dashboard** built with **Next.js (fr
 
 ---
 
-## 🚀 Features
-
-### 🎓 Student Applications
+### 🚀 Features
+## 🎓 Student Applications
 - View list of student applications
-- Each application shows:
-  - ID
-  - Exam type
-  - Verification status (`unverified`, `verified`)
-- Button to mark an application as "Verified"
+ - Each application shows:
+ - ID
+ - Exam type
+ - Verification status (unverified, verified)
+ - Button to mark an application as "Verified"
 
-### 📊 Department Seat Info
+## 📝 Admission Application Form
+- Fill out and submit an admission application
+ - Upload required documents (photo, marksheets, exam PDFs)
+ - Select desired course and exam type
+
+## 📄 Admission Status & Seat Confirmation
+- Check status of submitted applications
+ - Confirm seat once application is approved
+ - Seat count auto-updated upon confirmation
+
+## 📊 Department Seat Info
 - Displays:
-  - Department name
-  - Total seats
-  - Available seats
-- Real-time fetch from backend
+ - Department name
+ - Total seats
+ - Available seats
+ - Real-time fetch from backend
+
 
 ---
 
