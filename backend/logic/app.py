@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile, Depends
 from typing import List, Optional
+from fastapi.responses import JSONResponse
 from psycopg2.extensions import connection
 
 from cc_proj.backend.db_connection.conection import get_db
@@ -29,6 +30,7 @@ async def student_portal(
     marks12: UploadFile = File(...),
     competitiveExam: str = Form(...),
     examPdf: Optional[UploadFile] = File(None),
+    course: str = Form(...),  # New course field
     db: connection = Depends(get_db)  # Injected db connection
 ):
     # Read file contents
@@ -38,15 +40,15 @@ async def student_portal(
     examPdf_content = await (examPdf.read() if examPdf else None)
     
     try:
-
-        # Insert data using the provided db connection
+        # Insert data using the provided db connection with RETURNING to get the inserted ID
         cur = db.cursor()
         cur.execute("""
             INSERT INTO application_data(
                 student_name, age, gender, student_photo,
                 marksheet_10th, marksheet_12th,
-                competitive_exam, exam_marksheet
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                competitive_exam, exam_marksheet, course_applied
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;  -- Get the ID of the inserted row
         """, (
             studentName,
             int(age),
@@ -55,15 +57,22 @@ async def student_portal(
             marks10_content,
             marks12_content,
             competitiveExam,
-            examPdf_content
+            examPdf_content,
+            course  # Store course selection
         ))
+        
+        # Fetch the inserted application ID
+        application_id = cur.fetchone()[0]
+
+        # Commit the transaction
         db.commit()
+
         cur.close()
 
-        return {"message": "Application submitted successfully"}
+        return {"message": "Application submitted successfully", "application_id": application_id}
     except Exception as e:
         print(f"Error: {e}")
-
+        return JSONResponse(status_code=500, content={"message": "Error in submission"})
 
 
 @app.get("/api/seatInfo", response_model=List[Department])
@@ -119,11 +128,8 @@ async def get_student_applications(db:connection=Depends(get_db)):
         print(f"Error: {e}")
         return {"applications": []}
     
-@app.put("/api/studentApplications/{application_id}/verify")
-async def verify_student_documents(application_id: int, request: UpdateStatusRequest,db:connection=Depends(get_db)):
-    # Validate status
-    if request.status not in ["verified", "unverified"]:
-        raise HTTPException(status_code=400, detail="Invalid status value")
+@app.put("/api/studentApplications/verify/{application_id}")
+async def verify_student_documents(application_id: int,db:connection=Depends(get_db)):
 
     # Connect to the database
     cur=db.cursor()
@@ -131,11 +137,10 @@ async def verify_student_documents(application_id: int, request: UpdateStatusReq
     # Update the student's status in the database
     try:
         cur.execute("""
-            UPDATE application_data
-            SET status = "pending"
-            WHERE id = %s AND status = 'unverified';
-        """, (request.status, application_id))
+            UPDATE application_data SET status = 'approved' WHERE id = %s;
+        """, (application_id ,))
         
+        db.commit()
         
 
         # Check if the update was successful
@@ -176,4 +181,61 @@ async def get_student_data(appNumber: str = Query(...), db:connection = Depends(
 
     except Exception as e:
         print(f"Error fetching application data: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+
+
+
+@app.post("/api/confirmSeat", response_model=StudentDataResponse)
+async def confirm_seat(appNumber: str = Query(...), db: connection = Depends(get_db)):
+    try:
+        # Step 1: Fetch student data
+        cur = db.cursor()
+        cur.execute("""
+            SELECT student_name, age, gender, competitive_exam, status , course_applied
+            FROM application_data 
+            WHERE id = %s
+        """, (appNumber,))
+
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        student_name, age, gender, competitive_exam, status, course_applied = row
+
+        # Step 2: Check if document verification is approved
+        if status.lower() != "approved":
+            raise HTTPException(status_code=400, detail="Document verification is not approved")
+
+        # Step 3: Reduce available seats for the course in seat_information table
+        cur.execute("""
+            UPDATE seat_information 
+            SET available_seats = available_seats - 1
+            WHERE course_name = %s
+        """, (course_applied,))
+        db.commit()
+
+        # Step 4: Insert student data into admissions_2025 table
+        cur.execute("""
+            INSERT INTO admissions_2025 (application_id, student_name, age, gender, competitive_exam, course_applied)
+            SELECT id, student_name, age, gender, competitive_exam, course_applied
+            FROM application_data
+            WHERE id = %s
+        """, (appNumber,))
+        db.commit()
+
+        cur.close()
+
+        # Return the updated student data with seatConfirmed set to True
+        return {
+            "studentName": student_name,
+            "age": age,
+            "gender": gender,
+            "competitiveExam": competitive_exam,
+            "status": status,
+            "seatConfirmed": True
+        }
+
+    except Exception as e:
+        print(f"Error confirming seat: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

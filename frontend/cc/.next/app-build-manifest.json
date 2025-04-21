@@ -11,6 +11,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
+    "/student-portal/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/student-portal/page.js"
+    ],
     "/application-status/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -20,11 +25,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin-dashboard/page.js"
-    ],
-    "/student-portal/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/student-portal/page.js"
     ]
   }
 }

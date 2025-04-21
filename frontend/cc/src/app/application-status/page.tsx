@@ -8,13 +8,13 @@ type StudentInfo = {
   gender: string;
   competitiveExam: string;
   documentVerificationStatus: string;
-  pendingStatus?: string;
 };
 
 export default function Page() {
   const [appNumber, setAppNumber] = useState('');
   const [studentData, setStudentData] = useState<StudentInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [seatConfirmed, setSeatConfirmed] = useState<boolean>(false); // To track if seat is confirmed
 
   const handleClick = async () => {
     try {
@@ -33,7 +33,6 @@ export default function Page() {
         gender,
         competitiveExam,
         status: documentVerificationStatus,
-        pendingStatus,
       } = data;
 
       setStudentData({
@@ -42,12 +41,32 @@ export default function Page() {
         gender,
         competitiveExam,
         documentVerificationStatus,
-        pendingStatus,
       });
       setError(null);
     } catch (err) {
       setError('Error fetching data');
       setStudentData(null);
+    }
+  };
+
+  const confirmSeat = async () => {
+    if (studentData) {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/api/confirmSeat?appNumber=${encodeURIComponent(appNumber)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (res.ok) {
+          setSeatConfirmed(true); // Mark seat as confirmed
+        } else {
+          setError('Failed to confirm seat');
+        }
+      } catch (err) {
+        setError('Error confirming seat');
+      }
     }
   };
 
@@ -87,8 +106,24 @@ export default function Page() {
           <p><strong>Competitive Exam:</strong> {studentData.competitiveExam}</p>
           <p><strong>Document Verification Status:</strong> {studentData.documentVerificationStatus}</p>
 
-          {studentData.documentVerificationStatus.toLowerCase() === 'verified' && (
-            <p><strong>Pending Status:</strong> {studentData.pendingStatus || 'N/A'}</p>
+          {/* Show Confirm Seat Button if Document is Approved */}
+          {studentData.documentVerificationStatus.toLowerCase() === 'approved' && (
+            <>
+              {/* Button to Confirm Seat */}
+              {!seatConfirmed && (
+                <button
+                  onClick={confirmSeat}
+                  className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                >
+                  Confirm Seat
+                </button>
+              )}
+
+              {/* Success message after confirming seat */}
+              {seatConfirmed && (
+                <p className="mt-2 text-green-600">Seat confirmed successfully!</p>
+              )}
+            </>
           )}
         </div>
       )}

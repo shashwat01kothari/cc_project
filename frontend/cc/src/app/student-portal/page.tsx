@@ -6,15 +6,16 @@ export default function StudentPortal() {
   const [studentName, setStudentName] = useState('')
   const [age, setAge] = useState('')
   const [gender, setGender] = useState('male')
-  const [studentPhoto, setStudentPhoto] = useState(null)
-  const [marks10, setMarks10] = useState(null)
-  const [marks12, setMarks12] = useState(null)
+  const [studentPhoto, setStudentPhoto] = useState<File | null>(null)
+  const [marks10, setMarks10] = useState<File | null>(null)
+  const [marks12, setMarks12] = useState<File | null>(null)
   const [competitiveExam, setCompetitiveExam] = useState('')
-  const [examPdf, setExamPdf] = useState(null)
+  const [examPdf, setExamPdf] = useState<File | null>(null)
+  const [selectedCourse, setSelectedCourse] = useState('')  // New state for selected course
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-  
+
     const formData = new FormData()
     formData.append('studentName', studentName)
     formData.append('age', age)
@@ -24,18 +25,22 @@ export default function StudentPortal() {
     if (marks12) formData.append('marks12', marks12)
     formData.append('competitiveExam', competitiveExam)
     if (examPdf) formData.append('examPdf', examPdf)
-  
+    formData.append('course', selectedCourse)  // Add course to form data
+
     try {
       const response = await fetch('http://127.0.0.1:8000/api/studentPortal', {
         method: 'POST',
         body: formData,
       })
-  
+
       if (response.ok) {
         const result = await response.json()
         console.log('Success:', result)
-  
-        // Reset all form fields
+
+        const { application_id } = result
+        alert(`Application submitted successfully! Your application ID is: ${application_id}`)
+
+        // Reset form
         setStudentName('')
         setAge('')
         setGender('male')
@@ -44,17 +49,18 @@ export default function StudentPortal() {
         setMarks12(null)
         setCompetitiveExam('')
         setExamPdf(null)
-  
-        // Show alert
-        alert('Application submitted successfully!')
+        setSelectedCourse('')  // Reset course selection
+
       } else {
         console.error('Error:', response.statusText)
       }
     } catch (error) {
       console.error('Request failed', error)
     }
-  }
-  
+}
+
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
   return (
     <div className="max-w-lg mx-auto p-4">
@@ -71,8 +77,8 @@ export default function StudentPortal() {
             id="studentName"
             value={studentName}
             onChange={(e) => setStudentName(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
           />
         </div>
 
@@ -86,8 +92,8 @@ export default function StudentPortal() {
             id="age"
             value={age}
             onChange={(e) => setAge(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
           />
         </div>
 
@@ -100,11 +106,31 @@ export default function StudentPortal() {
             id="gender"
             value={gender}
             onChange={(e) => setGender(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
+          </select>
+        </div>
+
+        {/* Select Course */}
+        <div>
+          <label htmlFor="courseApplied" className="block text-sm font-medium text-gray-700">
+            Select Course
+          </label>
+          <select
+            id="courseApplied"
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+          >
+            <option value="">Select Course</option>
+            <option value="CSE">CSE</option>
+            <option value="AIML">AIML</option>
+            <option value="ECE">ECE</option>
+            <option value="BBA">BBA</option>
           </select>
         </div>
 
@@ -117,9 +143,17 @@ export default function StudentPortal() {
             type="file"
             id="studentPhoto"
             accept="image/*"
-            onChange={(e) => setStudentPhoto(e.target.files ? e.target.files[0] : null)}
-            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
             required
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file && file.size > MAX_FILE_SIZE) {
+                alert('Student photo must be less than 10MB.')
+                e.target.value = ''
+              } else {
+                setStudentPhoto(file || null)
+              }
+            }}
+            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
           />
         </div>
 
@@ -132,9 +166,17 @@ export default function StudentPortal() {
             type="file"
             id="marks10"
             accept="application/pdf"
-            onChange={(e) => setMarks10(e.target.files ? e.target.files[0] : null)}
-            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
             required
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file && file.size > MAX_FILE_SIZE) {
+                alert('10th Marks Sheet must be less than 10MB.')
+                e.target.value = ''
+              } else {
+                setMarks10(file || null)
+              }
+            }}
+            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
           />
         </div>
 
@@ -147,13 +189,21 @@ export default function StudentPortal() {
             type="file"
             id="marks12"
             accept="application/pdf"
-            onChange={(e) => setMarks12(e.target.files ? e.target.files[0] : null)}
-            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
             required
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file && file.size > MAX_FILE_SIZE) {
+                alert('12th Marks Sheet must be less than 10MB.')
+                e.target.value = ''
+              } else {
+                setMarks12(file || null)
+              }
+            }}
+            className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
           />
         </div>
 
-        {/* Competitive Examination */}
+        {/* Competitive Exam */}
         <div>
           <label htmlFor="competitiveExam" className="block text-sm font-medium text-gray-700">
             Competitive Examination
@@ -162,8 +212,8 @@ export default function StudentPortal() {
             id="competitiveExam"
             value={competitiveExam}
             onChange={(e) => setCompetitiveExam(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
           >
             <option value="">Select Exam</option>
             <option value="pessat">PESSAT</option>
@@ -171,7 +221,7 @@ export default function StudentPortal() {
           </select>
         </div>
 
-        {/* Competitive Exam PDF (conditional rendering) */}
+        {/* Exam PDF */}
         {competitiveExam && (
           <div>
             <label htmlFor="examPdf" className="block text-sm font-medium text-gray-700">
@@ -181,18 +231,26 @@ export default function StudentPortal() {
               type="file"
               id="examPdf"
               accept="application/pdf"
-              onChange={(e) => setExamPdf(e.target.files ? e.target.files[0] : null)}
-              className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
               required
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file && file.size > MAX_FILE_SIZE) {
+                  alert(`${competitiveExam.toUpperCase()} Exam PDF must be less than 10MB.`)
+                  e.target.value = ''
+                } else {
+                  setExamPdf(file || null)
+                }
+              }}
+              className="mt-1 block w-full text-sm text-gray-500 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md"
             />
           </div>
         )}
 
-        {/* Submit Button */}
+        {/* Submit */}
         <div>
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
           >
             Submit
           </button>
