@@ -1,10 +1,10 @@
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile, Depends
 from typing import List, Optional
 from psycopg2.extensions import connection
 
 from cc_proj.backend.db_connection.conection import get_db
 
-from cc_proj.backend.db_model.admin_dashboard import Department, StudentApplicationsResponse, UpdateStatusRequest
+from cc_proj.backend.db_model.admin_dashboard import Department, StudentApplicationsResponse, StudentDataResponse, UpdateStatusRequest
 
 
 app = FastAPI()
@@ -149,3 +149,31 @@ async def verify_student_documents(application_id: int, request: UpdateStatusReq
     except Exception as e:
         
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    
+@app.get("/api/getData", response_model=Optional[StudentDataResponse])
+async def get_student_data(appNumber: str = Query(...), db:connection = Depends(get_db)):
+    try:
+        cur = db.cursor()
+        cur.execute("""
+            SELECT student_name, age, gender, competitive_exam , status
+            FROM application_data 
+            WHERE id = %s
+        """, (appNumber,))
+
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        return {
+            "studentName": row[0],
+            "age": row[1],
+            "gender": row[2],
+            "competitiveExam": row[3],
+            "status" : row[4]
+        }
+
+    except Exception as e:
+        print(f"Error fetching application data: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")

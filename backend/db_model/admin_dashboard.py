@@ -15,3 +15,10 @@ class StudentApplicationsResponse(BaseModel):
 
 class UpdateStatusRequest(BaseModel):
     status: str
+
+class StudentDataResponse(BaseModel):
+    studentName: str
+    age: int
+    gender: str
+    competitiveExam: str
+    status : str
