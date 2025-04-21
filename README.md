@@ -84,6 +84,9 @@ Marks a student application as "verified".
 ### GET `/api/getData`
 Return application status for a particular ID 
 
+### POST `/api/confirmSeat`
+Confirm/Block your seat for the year 2025
+
 ---
 
 ## 🙌 Acknowledgements
