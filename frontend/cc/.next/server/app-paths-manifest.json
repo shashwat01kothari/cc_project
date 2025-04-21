@@ -1,7 +1,5 @@
 {
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/page": "app/page.js",
-  "/student-portal/page": "app/student-portal/page.js",
   "/application-status/page": "app/application-status/page.js",
+  "/page": "app/page.js",
   "/admin-dashboard/page": "app/admin-dashboard/page.js"
 }
